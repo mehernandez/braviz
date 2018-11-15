@@ -4,12 +4,75 @@
             <link rel="stylesheet" type="text/css" href="style.css" />
             <script type="text/javascript" src="XTK.js" ></script>
             <script type="text/javascript" src="Xdat.js" ></script>
-    </head>
-<body>
-
-
-<p id="demo"></p>
-
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+            * {box-sizing: border-box;}
+            
+            body { 
+              margin: 0;
+              font-family: Arial, Helvetica, sans-serif;
+            }
+            
+            .header {
+              overflow: hidden;
+              background-color: #f1f1f1;
+              padding: 20px 10px;
+            }
+            
+            .header a {
+              float: left;
+              color: black;
+              text-align: center;
+              padding: 12px;
+              text-decoration: none;
+              font-size: 18px; 
+              line-height: 25px;
+              border-radius: 4px;
+            }
+            
+            .header a.logo {
+              font-size: 25px;
+              font-weight: bold;
+            }
+            
+            .header a:hover {
+              background-color: #ddd;
+              color: black;
+            }
+            
+            .header a.active {
+              background-color: dodgerblue;
+              color: white;
+            }
+            
+            .header-right {
+              float: right;
+            }
+            
+            @media screen and (max-width: 500px) {
+              .header a {
+                float: none;
+                display: block;
+                text-align: left;
+              }
+              .header-right {
+                float: none;
+              }
+            }
+            </style>
+            </head>
+            <body>
+            
+            <div class="header">
+              <a href="#default" class="logo">Braviz</a>
+              <div class="header-right">
+                <a class="active" href="#home">Home</a>
+                <a href="#contact">Contact</a>
+                <a href="#about">About</a>
+              </div>
+            </div>
+<br/>
+<br/>
 <script>
 window.onload = function() {
 
@@ -24,6 +87,14 @@ var volume = new X.volume();
 // formats like MGH/MGZ
 volume.file = 'volume2.nii.gz';
 
+
+// create a X.volume
+var volume2 = new X.volume();
+// .. and attach the single-file dicom in .NRRD format
+// this works with gzip/gz/raw encoded NRRD files but XTK also supports other
+// formats like MGH/MGZ
+volume2.file = 'volume.nii.gz';
+
 // the segmentation is a X.mesh
 var mesh = new X.mesh();
 // .. and is loaded from a .VTK file
@@ -35,8 +106,20 @@ mesh.color = [0.7, 0, 0];
 // option for it
 mesh.visible = false;
 
+// the segmentation is a X.mesh
+var mesh2 = new X.mesh();
+// .. and is loaded from a .VTK file
+//mesh.file = 'out.vtk';
+mesh2.file = 'out.vtk';
+// we set the color to a lighter red
+mesh2.color = [0.7, 0, 0];
+// and also set the visibility to false, since we add a 'load-on-demand'
+// option for it
+mesh2.visible = false;
+
 // only add the volume for now, the mesh gets loaded on request
 r.add(volume);
+r.add(volume2);
 
 // the onShowtime method gets executed after all files were fully loaded and
 // just before the first rendering attempt
@@ -50,14 +133,13 @@ r.onShowtime = function() {
   
   // indicate if the mesh was loaded
   var meshWasLoaded = false;
+  var meshWasLoaded2 = false;
   
   var gui = new dat.GUI();
   
   // the following configures the gui for interacting with the X.volume
   var volumegui = gui.addFolder('Volume');
   // now we can configure controllers which..
-  // .. switch between slicing and volume rendering
-  var vrController = volumegui.add(volume, 'volumeRendering');
   // the min and max color which define the linear gradient mapping
   var minColorController = volumegui.addColor(volume, 'minColor');
   var maxColorController = volumegui.addColor(volume, 'maxColor');
@@ -81,6 +163,35 @@ r.onShowtime = function() {
   var sliceZController = volumegui.add(volume, 'indexZ', 0,
       volume.dimensions[2] - 1);
   volumegui.open();
+
+  // Another
+
+  // the following configures the gui for interacting with the X.volume
+  var volumegui2 = gui.addFolder('Volume2');
+  // now we can configure controllers which..
+  // the min and max color which define the linear gradient mapping
+  var minColorController2 = volumegui2.addColor(volume2, 'minColor');
+  var maxColorController2 = volumegui2.addColor(volume2, 'maxColor');
+  // .. configure the volume rendering opacity
+  var opacityController2 = volumegui2.add(volume2, 'opacity', 0, 1).listen();
+  // .. and the threshold in the min..max range
+  var lowerThresholdController2 = volumegui2.add(volume2, 'lowerThreshold',
+      volume2.min, volume2.max);
+  var upperThresholdController2 = volumegui2.add(volume2, 'upperThreshold',
+      volume2.min, volume2.max);
+  var lowerWindowController2 = volumegui2.add(volume2, 'windowLow', volume2.min,
+      volume2.max);
+  var upperWindowController2 = volumegui2.add(volume2, 'windowHigh', volume2.min,
+      volume2.max);
+  // the indexX,Y,Z are the currently displayed slice indices in the range
+  // 0..dimensions-1
+  var sliceXController2 = volumegui2.add(volume2, 'indexX', 0,
+      volume2.dimensions[0] - 1);
+  var sliceYController2 = volumegui2.add(volume2, 'indexY', 0,
+      volume2.dimensions[1] - 1);
+  var sliceZController2 = volumegui2.add(volume2, 'indexZ', 0,
+      volume2.dimensions[2] - 1);
+  volumegui2.open();
   
   // now we configure the gui for interacting with the X.mesh
   var meshgui = gui.addFolder('Mesh');
@@ -90,6 +201,15 @@ r.onShowtime = function() {
   // .. the mesh color
   var meshColorController = meshgui.addColor(mesh, 'color');
   meshgui.open();
+
+    // now we configure the gui for interacting with the X.mesh
+    var meshgui2 = gui.addFolder('Mesh2');
+  // the visible controller shows/hides the volume but also loads the file on
+  // demand (only the first time)
+  var meshVisibleController2 = meshgui2.add(mesh2, 'visible');
+  // .. the mesh color
+  var meshColorController2 = meshgui2.addColor(mesh2, 'color');
+  meshgui2.open();
   
   // meshgui callbacks
   meshVisibleController.onChange(function(value) {
@@ -112,12 +232,34 @@ r.onShowtime = function() {
     }
     
   });
+
+  // meshgui callbacks
+  meshVisibleController2.onChange(function(value) {
+
+if (!meshWasLoaded2) {
+  
+  // this only gets executed the first time to load the mesh, after we
+  // just toggle the visibility
+  r.add(mesh2);
+  
+  // we set the onShowtime function to a void since we don't want to
+  // create the GUI again here
+  r.onShowtime = function() {
+
+  };
+  
+  // set the loaded flag
+  meshWasLoaded2 = true;
+  
+}
+
+});
   
 
 };
 
 // adjust the camera position a little bit, just for visualization purposes
-r.camera.position = [120, 80, 160];
+r.camera.position = [0, 450, 0];
 
 // showtime! this triggers the loading of the volume and executes
 // r.onShowtime() once done
